@@ -1,7 +1,7 @@
 const Invoice = require("../models/Invoice");
 const express = require("express");
 const { paypalRequest } = require("../paypal");
-const { draftInvoiceFromText } = require("../ai");
+const { draftInvoiceFromText, draftFollowUp } = require("../ai");
 const router = express.Router();
 
 // Create AND send an invoice
@@ -121,6 +121,85 @@ router.post("/draft", async (req, res) => {
       error: err.response?.data?.error?.message || err.message,
     });
   }
+});
+
+const UNPAID = ["SENT", "PARTIALLY_PAID"];
+const daysOverdue = (inv) =>
+  Math.max(0, Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000));
+
+// List unpaid invoices that are past due
+router.get("/overdue", async (req, res) => {
+  try {
+    const list = await Invoice.find({
+      status: { $in: UNPAID },
+      dueDate: { $lt: new Date() },
+    }).sort({ dueDate: 1 });
+    res.json(list.map((i) => ({ ...i.toObject(), daysOverdue: daysOverdue(i) })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AI: draft a follow-up (preview only, nothing is sent)
+router.post("/:id/followup", async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ paypalInvoiceId: req.params.id });
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    if (!UNPAID.includes(invoice.status)) {
+      return res.status(400).json({ error: `Invoice is ${invoice.status}, no reminder needed.` });
+    }
+    const days = daysOverdue(invoice);
+    if (days < 1) return res.status(400).json({ error: "Invoice is not overdue yet." });
+
+    const draft = await draftFollowUp(invoice, days, req.body?.tone);
+    res.json({ invoiceId: invoice.paypalInvoiceId, daysOverdue: days, ...draft });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(err.status || err.response?.status || 500).json({
+      error: err.response?.data?.error?.message || err.message,
+    });
+  }
+});
+
+// Send the approved reminder through PayPal and log it
+router.post("/:id/remind", async (req, res) => {
+  try {
+    const { subject, message, tone } = req.body;
+    if (typeof subject !== "string" || typeof message !== "string" || !subject.trim() || !message.trim()) {
+      return res.status(400).json({ error: "subject and message are required" });
+    }
+    const invoice = await Invoice.findOne({ paypalInvoiceId: req.params.id });
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+    if (!UNPAID.includes(invoice.status)) {
+      return res.status(400).json({ error: `Invoice is ${invoice.status}, no reminder needed.` });
+    }
+
+    await paypalRequest("post", `/v2/invoicing/invoices/${invoice.paypalInvoiceId}/remind`, {
+      subject: subject.trim().slice(0, 100),
+      note: message.trim().slice(0, 800),
+      send_to_invoicer: true,
+    });
+
+    invoice.reminders.push({ sentAt: new Date(), tone: tone || "custom", message: message.trim() });
+    await invoice.save();
+    res.json({ sent: true, remindersSent: invoice.reminders.length });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
+  }
+});
+
+// DEMO ONLY: make an invoice look overdue so you can show the feature
+router.post("/:id/demo-backdate", async (req, res) => {
+  if (process.env.DEMO_MODE !== "true") {
+    return res.status(403).json({ error: "Demo mode is off" });
+  }
+  const days = Math.min(Math.max(Number(req.body?.days) || 10, 1), 90);
+  const invoice = await Invoice.findOne({ paypalInvoiceId: req.params.id });
+  if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+  invoice.dueDate = new Date(Date.now() - days * 86400000);
+  await invoice.save();
+  res.json({ dueDate: invoice.dueDate, daysOverdue: days });
 });
 // Check an invoice's current status
 router.get("/:id", async (req, res) => {

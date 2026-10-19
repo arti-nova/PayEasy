@@ -13,8 +13,15 @@ const invoiceSchema = new mongoose.Schema(
     status: { type: String, default: "SENT" },
     paidAt: Date,
     processedEvents: [String], // webhook event IDs, prevents double-processing
+      reminders: [
+      {
+        sentAt: Date,
+        tone: String,
+        message: String,
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Invoice", invoiceSchema);
