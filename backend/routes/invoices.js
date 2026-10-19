@@ -1,7 +1,7 @@
 const Invoice = require("../models/Invoice");
 const express = require("express");
 const { paypalRequest } = require("../paypal");
-
+const { draftInvoiceFromText } = require("../ai");
 const router = express.Router();
 
 // Create AND send an invoice
@@ -104,6 +104,23 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   const invoices = await Invoice.find().sort({ createdAt: -1 });
   res.json(invoices);
+});
+
+// AI: turn plain text into a draft invoice (preview only, nothing is sent)
+router.post("/draft", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (typeof text !== "string" || !text.trim() || text.length > 1000) {
+      return res.status(400).json({ error: "Provide a 'text' string up to 1000 characters." });
+    }
+    const result = await draftInvoiceFromText(text.trim());
+    res.json(result);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(err.status || err.response?.status || 500).json({
+      error: err.response?.data?.error?.message || err.message,
+    });
+  }
 });
 // Check an invoice's current status
 router.get("/:id", async (req, res) => {
