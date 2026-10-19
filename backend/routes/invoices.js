@@ -1,3 +1,4 @@
+const Invoice = require("../models/Invoice");
 const express = require("express");
 const { paypalRequest } = require("../paypal");
 
@@ -76,7 +77,17 @@ router.post("/", async (req, res) => {
       subject: `Invoice ${next.invoice_number}`,
       note,
     });
-
+    await Invoice.create({
+      paypalInvoiceId: invoiceId,
+      invoiceNumber: next.invoice_number,
+      clientName,
+      clientEmail,
+      description,
+      amount: Number(amount),
+      currency,
+      dueDate: due,
+      status: "SENT",
+    });
     res.status(201).json({
       invoiceId,
       invoiceNumber: next.invoice_number,
@@ -90,7 +101,10 @@ router.post("/", async (req, res) => {
     });
   }
 });
-
+router.get("/", async (req, res) => {
+  const invoices = await Invoice.find().sort({ createdAt: -1 });
+  res.json(invoices);
+});
 // Check an invoice's current status
 router.get("/:id", async (req, res) => {
   try {

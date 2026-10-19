@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+const webhookRoutes = require("./routes/webhooks");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -20,6 +22,13 @@ app.get("/api/paypal/test", async (req, res) => {
 });
 
 app.use("/api/invoices", invoiceRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
+  })
+  .catch((err) => console.error("MongoDB connection failed:", err.message));
