@@ -20,6 +20,7 @@ const invoiceSchema = new mongoose.Schema(
         message: String,
       },
     ],
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

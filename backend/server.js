@@ -5,10 +5,12 @@ const express = require("express");
 const cors = require("cors");
 const { getAccessToken } = require("./paypal");
 const invoiceRoutes = require("./routes/invoices");
+const forecastRoutes = require("./routes/forecast");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 
 app.get("/", (req, res) => res.send("PayEasy backend running"));
 
@@ -23,6 +25,7 @@ app.get("/api/paypal/test", async (req, res) => {
 
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/api/forecast", forecastRoutes);
 
 const PORT = process.env.PORT || 5000;
 mongoose
