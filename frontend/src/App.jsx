@@ -44,7 +44,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>PayLoop</h1>
+        <h1>PayEasy</h1>
         <p className="muted">Create, track and chase invoices, and see your cash coming in.</p>
       </header>
 

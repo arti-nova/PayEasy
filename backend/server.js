@@ -3,6 +3,7 @@ const webhookRoutes = require("./routes/webhooks");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { getAccessToken } = require("./paypal");
 const invoiceRoutes = require("./routes/invoices");
 const forecastRoutes = require("./routes/forecast");
@@ -10,7 +11,6 @@ const forecastRoutes = require("./routes/forecast");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 
 app.get("/", (req, res) => res.send("PayEasy backend running"));
 
@@ -26,6 +26,14 @@ app.get("/api/paypal/test", async (req, res) => {
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/forecast", forecastRoutes);
+
+// --- Serve Frontend in Production ---
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+// ----------------------------------
 
 const PORT = process.env.PORT || 5000;
 mongoose
