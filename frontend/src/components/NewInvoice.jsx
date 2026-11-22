@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api";
+import { Sparkles, Send, CheckCircle2 } from "lucide-react";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"];
 
@@ -11,14 +12,17 @@ export default function NewInvoice({ onCreated }) {
   const [error, setError] = useState("");
   const [sent, setSent] = useState(null);
 
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key, value) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
   async function draft() {
     setBusy(true);
     setError("");
     setSent(null);
+
     try {
       const r = await api.post("/api/invoices/draft", { text });
+
       setForm(r.draft);
       setMissing(r.missing);
     } catch (e) {
@@ -38,15 +42,18 @@ export default function NewInvoice({ onCreated }) {
   async function send() {
     setBusy(true);
     setError("");
+
     try {
       const r = await api.post("/api/invoices", {
         ...form,
         amount: Number(form.amount),
         dueInDays: Number(form.dueInDays),
       });
+
       setSent(r);
       setForm(null);
       setText("");
+
       onCreated();
     } catch (e) {
       setError(e.message);
@@ -56,39 +63,70 @@ export default function NewInvoice({ onCreated }) {
   }
 
   return (
-    <section className="card">
-      <h2>New invoice</h2>
-      <textarea
-        rows={2}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="e.g. Invoice Acme Studios (billing@acme.com) 250 USD for logo design with 3 revisions, due in 2 weeks"
-      />
-      <button onClick={draft} disabled={busy || !text.trim()}>
-        {busy && !form ? "Drafting…" : "Draft with AI"}
-      </button>
+    <div className="invoice-form">
+      <div className="ai-input-section">
+        <label className="form-label">
+          <Sparkles size={15} />
+          Describe your invoice
+        </label>
+
+        <textarea
+          rows={4}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Example: Invoice Acme Studios for $250 for logo design. Due in 2 weeks."
+        />
+
+        <button
+          className="ai-generate-button"
+          onClick={draft}
+          disabled={busy || !text.trim()}
+        >
+          <Sparkles size={15} />
+          {busy && !form ? "Drafting..." : "Generate with Gemini"}
+        </button>
+      </div>
 
       {error && <p className="error">{error}</p>}
 
       {form && (
-        <div className="preview">
-          <h3>Preview. Check it, then send.</h3>
+        <div className="invoice-edit-form">
+          <div className="form-heading">
+            <h3>Review your invoice</h3>
+            <p>Check the details before sending.</p>
+          </div>
+
           {missing.length > 0 && (
-            <p className="error">The AI couldn't find: {missing.join(", ")}. Fill them in below.</p>
+            <div className="missing-fields">
+              The AI couldn't find: {missing.join(", ")}. Please complete them.
+            </div>
           )}
+
           <div className="grid">
             <label>
               Client name
-              <input value={form.clientName} onChange={(e) => set("clientName", e.target.value)} />
+              <input
+                value={form.clientName || ""}
+                onChange={(e) => set("clientName", e.target.value)}
+              />
             </label>
+
             <label>
               Client email
-              <input value={form.clientEmail} onChange={(e) => set("clientEmail", e.target.value)} />
+              <input
+                value={form.clientEmail || ""}
+                onChange={(e) => set("clientEmail", e.target.value)}
+              />
             </label>
+
             <label className="wide">
               Description
-              <input value={form.description} onChange={(e) => set("description", e.target.value)} />
+              <input
+                value={form.description || ""}
+                onChange={(e) => set("description", e.target.value)}
+              />
             </label>
+
             <label>
               Amount
               <input
@@ -98,40 +136,60 @@ export default function NewInvoice({ onCreated }) {
                 onChange={(e) => set("amount", e.target.value)}
               />
             </label>
+
             <label>
               Currency
-              <select value={form.currency} onChange={(e) => set("currency", e.target.value)}>
+              <select
+                value={form.currency || "USD"}
+                onChange={(e) => set("currency", e.target.value)}
+              >
                 {CURRENCIES.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
             </label>
+
             <label>
               Due in (days)
               <input
                 type="number"
                 min="1"
-                value={form.dueInDays}
+                value={form.dueInDays || ""}
                 onChange={(e) => set("dueInDays", e.target.value)}
               />
             </label>
           </div>
-          <button onClick={send} disabled={busy || !ready}>
-            {busy ? "Sending…" : "Confirm and send via PayPal"}
+
+          <button
+            className="send-invoice-button"
+            onClick={send}
+            disabled={busy || !ready}
+          >
+            <Send size={15} />
+            {busy ? "Sending..." : "Confirm & Send via PayPal"}
           </button>
         </div>
       )}
 
       {sent && (
-        <p className="success">
-          Invoice {sent.invoiceNumber} sent.{" "}
-          {sent.payLink && (
-            <a href={sent.payLink} target="_blank" rel="noreferrer">
-              Open payment page
-            </a>
-          )}
-        </p>
+        <div className="invoice-success">
+          <CheckCircle2 size={18} />
+
+          <div>
+            <strong>Invoice successfully sent!</strong>
+
+            <p>
+              Invoice {sent.invoiceNumber} has been created.
+            </p>
+
+            {sent.payLink && (
+              <a href={sent.payLink} target="_blank" rel="noreferrer">
+                Open payment page
+              </a>
+            )}
+          </div>
+        </div>
       )}
-    </section>
+    </div>
   );
 }
