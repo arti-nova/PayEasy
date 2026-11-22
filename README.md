@@ -1,10 +1,8 @@
 # PayEasy
 
-**Create, track and chase invoices, and see your cash coming in.**
-Built for the *Build What's Next with PayPal and AI* hackathon.
+**Create, track and chase invoices and see your cash coming in.**
 
-- **Live demo:** `<YOUR-RENDER-URL>`
-- **Demo video:** `<YOUR-YOUTUBE-LINK>`
+- **Live demo:** `https://payeasy-knau.onrender.com`
 - **License:** MIT
 
 > The first request to the live demo can take up to a minute because the free hosting tier sleeps when idle.
