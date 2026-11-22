@@ -14,7 +14,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-
+import logo from "src/assets/logo.gif";
 import { api } from "./api";
 import { money } from "./format";
 
@@ -174,7 +174,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <div className="top-brand">
-            <img src="/public/logo.gif" alt="" />
+            <img src={logo} alt="" />
             <span>PayEasy</span>
           </div>
         </header>
