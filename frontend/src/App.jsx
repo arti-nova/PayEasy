@@ -174,7 +174,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <div className="top-brand">
-            <img src="/logo.gif" alt="" />
+            <img src="/public/logo.gif" alt="" />
             <span>PayEasy</span>
           </div>
         </header>
