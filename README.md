@@ -1,6 +1,6 @@
 # PayEasy
 
-**Create, track and chase invoices, and see your cash coming in.**
+**Create, track and chase invoices and see your cash coming in.**
 
 - **Live demo:** `https://payeasy-knau.onrender.com`
 - **License:** MIT
