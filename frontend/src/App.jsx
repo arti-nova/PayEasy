@@ -14,7 +14,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-import logo from "src/assets/logo.gif";
+import logo from "./assets/logo.gif";
 import { api } from "./api";
 import { money } from "./format";
 
